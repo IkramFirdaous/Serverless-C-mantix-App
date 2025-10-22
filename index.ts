@@ -13,53 +13,58 @@ async function handler(_req: Request): Promise<Response> {
     return handlePreFlightRequest();
   }
 
-  // Define the target word that users need to guess
-  const TARGET_WORD = "centrale";
+  // Extract the word from the URL query parameter
+  const url = new URL(_req.url);
+  const userWord = url.searchParams.get("word");
 
-  try {
-    // Extract the word from the request URL
-    const url = new URL(_req.url);
-    const userGuess = url.searchParams.get("word");
-
-    if (!userGuess) {
-      return new Response(JSON.stringify({ error: "Word parameter is required in URL query string" }), {
+  // Validate that word parameter exists
+  if (!userWord) {
+    return new Response(
+      JSON.stringify({ error: "Missing 'word' parameter" }),
+      {
         status: 400,
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "content-type",
         },
-      });
-    }
+      }
+    );
+  }
 
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json");
+  const headers = new Headers();
+  headers.append("Content-Type", "application/json");
 
-    // Compare user's guess with the target word using the comparison API
-    const similarityRequestBody = JSON.stringify({
-      word1: TARGET_WORD,
-      word2: userGuess,
-    });
+  // Use the user input word in the comparison
+  const similarityRequestBody = JSON.stringify({
+    word1: userWord,
+    word2: "centrale", // or make this dynamic too
+  });
 
-    const requestOptions = {
-      method: "POST",
-      headers: headers,
-      body: similarityRequestBody,
-      redirect: "follow",
-    };
+  const requestOptions = {
+    method: "POST",
+    headers: headers,
+    body: similarityRequestBody,
+    redirect: "follow",
+  };
 
-    const response = await fetch("https://word2vec.nicolasfley.fr/similarity", requestOptions);
+  try {
+    const response = await fetch(
+      "https://word2vec.nicolasfley.fr/similarity",
+      requestOptions
+    );
 
     if (!response.ok) {
       console.error(`Error: ${response.statusText}`);
-      return new Response(JSON.stringify({ error: response.statusText }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "content-type",
-        },
-      });
+      return new Response(
+        JSON.stringify({ error: `API Error: ${response.statusText}` }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
     }
 
     const result = await response.json();
@@ -70,20 +75,20 @@ async function handler(_req: Request): Promise<Response> {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "content-type",
       },
     });
   } catch (error) {
     console.error("Fetch error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "content-type",
-      },
-    });
+    return new Response(
+      JSON.stringify({ error: `Fetch error: ${error.message}` }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
   }
 }
 
