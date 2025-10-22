@@ -34,10 +34,10 @@ async function handler(_req: Request): Promise<Response> {
   const headers = new Headers();
   headers.append("Content-Type", "application/json");
 
-  // Use the user input word in the comparison
+ 
   const similarityRequestBody = JSON.stringify({
     word1: userWord,
-    word2: "centrale", // or make this dynamic too
+    word2: "centrale", 
   });
 
   const requestOptions = {
